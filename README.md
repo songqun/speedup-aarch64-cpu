@@ -1,2 +1,2 @@
 # speedup-aarch64-cpu
-a computing kernel implementation in ML inference framework aiming at theoretical limit
+A computing kernel implementation in ML inference framework aiming at theoretical limit on ARMv8 CPU in single thread.
