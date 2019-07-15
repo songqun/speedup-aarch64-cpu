@@ -36,7 +36,7 @@ void conv1x1s1p0(const float *input, const float *weight, float *output, const f
  * winograd, F(4x4, 6x6)
  * two step: store the whole in_tm, then do dot prod, then transform the whole out_tm
  * input trans data layout: NCHWc4 => N*(6*6)*HW*C*hw8
- * output trans data layout: N*(6*6)*HW*O*o4 => NOHWo4
+ * output trans data layout: N*(6*6)*O*HW*o8 => NOHWo4
  * weight data layout: N*(6*6)*O*T*C*o8 (T = oh/4*ow/4, tiles: nb of 6x6 block on one channel)
  * Assume ic and oc have been divided by 4
  */
@@ -50,7 +50,7 @@ void conv3x3s1p1_wino_two_step(const float *input, const float *weight, float *o
  * one step: do partly in_tm, then do dot prod on them, and transform them back
  * maybe better than two step for all data loaded into cache only once if blocked properly
  * input trans data layout: NCHWc4 => N*(6*6)*HW*C*hw8
- * output trans data layout: N*(6*6)*HW*O*o4 => NOHWo4
+ * output trans data layout: N*(6*6)*O*HW*o8 => NOHWo4
  * weight data layout: N*(6*6)*O*T*C*o8 (T = oh/4*ow/4, tiles: num of 6x6 block on one channel)
  * Assume ic and oc have been divided by 4
  */
@@ -130,7 +130,7 @@ void input_trans_wino(const float *input, float *input_tm);
 
 /*
  * winograd, F(4x4, 6x6)
- * output trans data layout: N*(6*6)*HW*O*o4 => NOHWo4
+ * output trans data layout: N*(6*6)*O*HW*o8 => NOHWo4
  */
 void output_trans_wino(const float *output, float *output_tm);
 
