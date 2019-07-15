@@ -1,5 +1,4 @@
-#include "../include/conv.hpp"
-#include <string.h>
+#include "conv.hpp"
 
 
 // More description see header for detail.
