@@ -92,33 +92,33 @@ void get_output_hw(int ih, int iw, int fh, int fw, int s, int p, int *oh, int *o
  * no optimization because the weight with proper layout can be stored into model, 
  * and next time when we load the model, the weight has already been in proper layout.
  */
-void weight_trans(const float *weight, float *weight_tm);
+void weight_trans(const float *weight, float *weight_tm, int ic, int oc, int fh, int fw, ConvAlg alg);
 
 
 /*
  * weight data layout: OCo8 (fh=fw=1)
  */
-void weight_trans_1x1s1p0(const float *weight, float *weight_tm);
+void weight_trans_1x1s1p0(const float *weight, float *weight_tm, int ic, int oc, int fh, int fw);
 
 
 /*
  * weight data layout: OHWCo8
  */
-void weight_trans_im2col(const float *weight, float *weight_tm);
+void weight_trans_im2col(const float *weight, float *weight_tm, int ic, int oc, int fh, int fw);
 
 
 /*
  * maybe not implement
  * weight data layout: OCHWo8
  */
-void weight_trans_direct(const float *weight, float *weight_tm);
+void weight_trans_direct(const float *weight, float *weight_tm, int ic, int oc, int fh, int fw);
 
 
 /*
  * winograd, F(4x4, 6x6)
  * weight data layout: N*(6*6)*O*T*C*o8 (T = oh/4*ow/4, tiles: num of 6x6 block on one channel)
  */
-void weight_trans_wino(const float *weight, float *weight_tm);
+void weight_trans_wino(const float *weight, float *weight_tm, int ic, int oc, int fh, int fw);
 
 
 /*
@@ -148,3 +148,11 @@ void infer_conv_alg(int nb, int ic, int ih, int iw, int oh, int ow, int oc,
  * Assume ic and oc have been divided by 4
  */
 void conv_buffer_size(int nb, int ic, int ih, int iw, int oh, int ow, int oc, int fh, int fw, int s, int p, ConvAlg alg, int *bytes);
+
+
+/*
+ * compute transformed weight size
+ * normally it equals to original weight size
+ * it does not in winograd
+ */
+void weight_trans_size(int nb, int ic, int ih, int iw, int oh, int ow, int oc, int fh, int fw, int s, int p, ConvAlg alg, int *bytes);

@@ -69,10 +69,26 @@ void conv_naive(float *input, float *weight, float *output, float *bias,
 }
 
 
+void compare(float *output, float *output_ref, float out_size)
+{
+  for (int i = 0; i < out_size; i++) {
+    float err = abs(output[i] - output_ref[i]) / output_ref[i];
+    if (err > 0.01) {
+      std::cout << i << " : " << output[i] << " : " << output_ref[i] << " : " << (err*100) << "\n";
+    }
+  }
+}
+
+
 int main()
 {
   // setup params
   int nb = 1, ic = 16, oc = 16, ih = 16, iw = 16, fh = 1, fw = 1, s = 1, p = 0;
+
+  if (ic%8 != 0 || oc%8 != 0 || fh != fw) {
+    std::cerr << "Not support.\n";
+    return -1;
+  }
 
   // setup input, weight, bias
   float *input = (float*)malloc(nb*ic*ih*iw*sizeof(float));
@@ -108,8 +124,27 @@ int main()
   // do conv_naive as reference
   conv_naive(input_ref, weight_ref, output_ref, bias_ref,
              nb, ic, ih, iw, oc, oh, ow ,fh, fw, s, p);
+  
+  // infer algorithm
+  ConvAlg alg;
+  infer_conv_alg(nb, ic/4, ih, iw, oh, ow, oc/4, fh, fw, s, p, &alg);
 
+  // setup buffer
+  int buf_bytes;
+  conv_buffer_size(nb, ic, ih, iw, oc, oh, ow, fh, fw, s, p, alg, &buf_bytes);
+  float *buf = (float*)malloc(buf_bytes);
 
+  // transform weight
+  int wtm_bytes;
+  weight_trans_size(nb, ic, ih, iw, oc, oh, ow, fh, fw, s, p, alg, &wtm_bytes);
+  float *wtm = (float*)malloc(wtm_bytes);
+  weight_trans(weight, wtm, ic, oc, fh, fw, alg);
+
+  // do conv
+  conv(input, wtm, output, bias, nb, ic, ih, iw, oc, oh, ow, fh, fw, s, p, buf, alg);
+
+  // compare rst
+  compare(output, output_ref, nb*oc*oh*ow);
 
   free(input);
   free(input_ref);
@@ -117,4 +152,6 @@ int main()
   free(weight_ref);
   free(output);
   free(output_ref);
+  free(buf);
+  free(wtm);
 }
