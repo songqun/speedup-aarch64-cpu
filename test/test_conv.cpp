@@ -7,8 +7,33 @@
 void conv_naive(float *input, float *weight, float *output, float *bias,
                 int nb, int ic, int ih, int iw, int oc, int oh, int ow, int fh, int fw, int s, int p)
 {
+  float *in = (float*)malloc(nb*ic*ih*iw*sizeof(float));
+  float *wgt = (float*)malloc(oc*ic*fh*fw*sizeof(float));
+  float *out = (float*)malloc(nb*oc*oh*ow);
+  // NCHWc4 => NCHW
+  for (int n = 0; n < nb; n++) {
+    for (int c = 0; c < ic/4; c++) {
+      for (int hw = 0; hw < ih*iw; hw++) {
+        for (int c4 = 0; c4 < 4; c4++) {
+          in[n*ic*ih*iw + (c*4+c4)*ih*iw + hw] = input[n*ic*ih*iw + c*ih*iw*4 + hw*4 + c4];
+        }
+      }
+    }
+  }
+  // OCHWo8 => OCHW
+  for (int o = 0; o < oc/8; o++) {
+    for (int chw = 0; chw < ic*fh*fw; chw++) {
+      for (int o8 = 0; o8 < 8; o8++) {
+        wgt[(o*8+o8)*ic*fh*fw +chw] = weight[o*ic*fh*fw*8 + chw*8 + o8];
+      }
+    }
+  }
+  // compute
   for (int n = 0; n < nb; n++) {
     for (int o = 0; o < oc; o++) {
+      for (int hw = 0; hw < oh*ow; hw++) {
+        out[n*oc*oh*ow + o*oh*ow + hw] = bias[n*oc + o];
+      }
       for (int c = 0; c < ic; c++) {
         for (int h = 0; h < oh; h++) {
           for (int w = 0; w < ow; w++) {
@@ -17,45 +42,58 @@ void conv_naive(float *input, float *weight, float *output, float *bias,
                 int in_h = h * s - p + f_h;
                 int in_w = w * s - p + f_w;
                 if (in_h >= 0 && in_h < ih && in_w >= 0 && in_w < iw) {
-                  output[nb*oc*oh*ow + o*oh*ow + h*ow + w] += 
-                      input[nb*ic*ih*iw + c*ih*iw + in_h*iw + in_w] * 
-                      weight[o*ic*fh*fw + c*fh*fw + f_h*fw + f_w];
+                  out[n*oc*oh*ow + o*oh*ow + h*ow + w] += 
+                      in[n*ic*ih*iw + c*ih*iw + in_h*iw + in_w] * 
+                      wgt[o*ic*fh*fw + c*fh*fw + f_h*fw + f_w];
                 }
               }
             }
           }
         }
       }
+    }
+  }
+  // NOHW => NOHWo4
+  for (int n = 0; n < nb; n++) {
+    for (int o = 0; o < oc/4; o++) {
       for (int hw = 0; hw < oh*ow; hw++) {
-        output[nb*oc*oh*ow + o*oh*ow + hw] += bias[o];
+        for (int o4 = 0; o4 < 4; o4++) {
+          output[n*oc*oh*ow + o*oh*ow*4 + hw*4 + o4] = out[n*oc*oh*ow + (o*4+o4)*oh*ow + hw];
+        }
       }
     }
   }
+  free(in);
+  free(wgt);
+  free(out);
 }
 
 
 int main()
 {
   // setup params
-  int nb = 1, ic = 16, oc = 16, ih = 16, iw = 16, fh = 3, fw = 3, s = 1, p = 1;
+  int nb = 1, ic = 16, oc = 16, ih = 16, iw = 16, fh = 1, fw = 1, s = 1, p = 0;
 
   // setup input, weight, bias
   float *input = (float*)malloc(nb*ic*ih*iw*sizeof(float));
   float *input_ref = (float*)malloc(nb*ic*ih*iw*sizeof(float));
   for (int i = 0; i < nb*ic*ih*iw; i++) {
-    input[i] = rand() % 5;
+    //input[i] = rand() % 5;
+    input[i] = 1;
     input_ref[i] = input[i];
   }
   float *weight = (float*)malloc(oc*ic*fh*fw*sizeof(float));
   float *weight_ref = (float*)malloc(oc*ic*fh*fw*sizeof(float));
   for (int i = 0; i < oc*ic*fh*fw; i++) {
-    weight[i] = rand() % 5;
+    //weight[i] = rand() % 5;
+    weight[i] = 1;
     weight_ref[i] = weight[i];
   }
   float *bias = (float*)malloc(oc*sizeof(float));
   float *bias_ref = (float*)malloc(oc*sizeof(float));
   for (int i = 0; i < oc; i++) {
-    bias[i] = rand() % 5;
+    //bias[i] = rand() % 5;
+    bias[i] = 1;
     bias_ref[i] = bias[i];
   }
 
