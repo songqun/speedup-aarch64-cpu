@@ -34,7 +34,7 @@ void conv_buffer_size(int nb, int ic, int ih, int iw, int oh, int ow, int oc, in
   switch(alg) {
     case CONV_1X1S1P0:
       // in_pack
-      *bytes = (ic*4)*8;
+      *bytes = ic*oh*ow;
       break;
     case CONV_WINO_TWO_STEP:
       *bytes = 0; //TODO
@@ -43,7 +43,7 @@ void conv_buffer_size(int nb, int ic, int ih, int iw, int oh, int ow, int oc, in
       // padding + in_pack
       int ih_pad = ih + 2*p;
       int iw_pad = iw + 2*p;
-      *bytes = ic*ih_pad*iw_pad*4 + fh*fw*(ic*4)*8;
+      *bytes = ic*ih_pad*iw_pad + fh*fw*ic*oh*ow;
       break;
     }
     default:
@@ -53,18 +53,49 @@ void conv_buffer_size(int nb, int ic, int ih, int iw, int oh, int ow, int oc, in
 }
 
 
+void weight_trans_size(int nb, int ic, int ih, int iw, int oh, int ow, int oc, int fh, int fw, int s, int p, ConvAlg alg, int *bytes)
+{
+  switch(alg) {
+    case CONV_WINO_TWO_STEP:
+      *bytes = ic*oc*6*6;
+      break;
+    default:
+      *bytes = ic*oc*fh*fw;
+      break;
+  }
+}
+
+
+void weight_trans(const float *weight, float *weight_tm, int ic, int oc, int fh, int fw, ConvAlg alg)
+{
+  switch(alg) {
+    case CONV_1X1S1P0:
+      weight_trans_1x1s1p0(weight, weight_tm, ic, oc, fh, fw);
+      break;
+    case CONV_IM2COL:
+      weight_trans_im2col(weight, weight_tm, ic, oc, fh, fw);
+      break;
+    case CONV_WINO_TWO_STEP:
+      weight_trans_wino(weight, weight_tm, ic, oc, fh, fw);
+      break;
+    default:
+      break;
+  }
+}
+
+
 void conv(const float *input, const float *weight, float *output, const float *bias,
           int nb, int ic, int ih, int iw, int oc, int oh, int ow, int fh, int fw, int s, int p, float *buf, ConvAlg alg)
 {
   switch(alg) {
     case CONV_1X1S1P0:
-      conv1x1s1p0(input, weight, output, bias, nb, ic, ih, iw, oc, oh, ow, fh, fw, s, p, buf);
+      conv1x1s1p0(input, weight, output, bias, nb, ic/4, ih, iw, oc/4, oh, ow, fh, fw, s, p, buf);
       break;
     case CONV_WINO_TWO_STEP:
-      conv3x3s1p1_wino_two_step(input, weight, output, bias, nb, ic, ih, iw, oc, oh, ow, fh, fw, s, p, buf);
+      conv3x3s1p1_wino_two_step(input, weight, output, bias, nb, ic/4, ih, iw, oc/4, oh, ow, fh, fw, s, p, buf);
       break;
     case CONV_IM2COL:
-      conv_im2col(input, weight, output, bias, nb, ic, ih, iw, oc, oh, ow, fh, fw, s, p, buf);
+      conv_im2col(input, weight, output, bias, nb, ic/4, ih, iw, oc/4, oh, ow, fh, fw, s, p, buf);
       break;
     default:
       break;
