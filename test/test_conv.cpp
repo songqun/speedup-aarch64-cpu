@@ -1,6 +1,7 @@
 #include "conv.hpp"
 #include <iostream>
 #include <string.h>
+#include <math.h>
 
 
 // From Caffe
@@ -8,7 +9,6 @@ void conv_naive(float *input, float *weight, float *output, float *bias,
                 int nb, int ic, int ih, int iw, int oc, int oh, int ow, int fh, int fw, int s, int p)
 {
   float *in = (float*)malloc(nb*ic*ih*iw*sizeof(float));
-  float *wgt = (float*)malloc(oc*ic*fh*fw*sizeof(float));
   float *out = (float*)malloc(nb*oc*oh*ow);
   // NCHWc4 => NCHW
   for (int n = 0; n < nb; n++) {
@@ -17,14 +17,6 @@ void conv_naive(float *input, float *weight, float *output, float *bias,
         for (int c4 = 0; c4 < 4; c4++) {
           in[n*ic*ih*iw + (c*4+c4)*ih*iw + hw] = input[n*ic*ih*iw + c*ih*iw*4 + hw*4 + c4];
         }
-      }
-    }
-  }
-  // OCHWo8 => OCHW
-  for (int o = 0; o < oc/8; o++) {
-    for (int chw = 0; chw < ic*fh*fw; chw++) {
-      for (int o8 = 0; o8 < 8; o8++) {
-        wgt[(o*8+o8)*ic*fh*fw +chw] = weight[o*ic*fh*fw*8 + chw*8 + o8];
       }
     }
   }
@@ -44,7 +36,7 @@ void conv_naive(float *input, float *weight, float *output, float *bias,
                 if (in_h >= 0 && in_h < ih && in_w >= 0 && in_w < iw) {
                   out[n*oc*oh*ow + o*oh*ow + h*ow + w] += 
                       in[n*ic*ih*iw + c*ih*iw + in_h*iw + in_w] * 
-                      wgt[o*ic*fh*fw + c*fh*fw + f_h*fw + f_w];
+                      weight[o*ic*fh*fw + c*fh*fw + f_h*fw + f_w];
                 }
               }
             }
@@ -64,7 +56,6 @@ void conv_naive(float *input, float *weight, float *output, float *bias,
     }
   }
   free(in);
-  free(wgt);
   free(out);
 }
 
@@ -83,9 +74,9 @@ void compare(float *output, float *output_ref, float out_size)
 int main()
 {
   // setup params
-  int nb = 1, ic = 16, oc = 16, ih = 16, iw = 16, fh = 1, fw = 1, s = 1, p = 0;
+  int nb = 1, ic = 4, oc = 8, ih = 4, iw = 4, fh = 1, fw = 1, s = 1, p = 0;
 
-  if (ic%8 != 0 || oc%8 != 0 || fh != fw) {
+  if (ic%4 != 0 || oc%8 != 0 || fh != fw) {
     std::cerr << "Not support.\n";
     return -1;
   }
@@ -94,22 +85,22 @@ int main()
   float *input = (float*)malloc(nb*ic*ih*iw*sizeof(float));
   float *input_ref = (float*)malloc(nb*ic*ih*iw*sizeof(float));
   for (int i = 0; i < nb*ic*ih*iw; i++) {
-    //input[i] = rand() % 5;
-    input[i] = 1;
+    input[i] = rand() % 5;
+    //input[i] = 1;
     input_ref[i] = input[i];
   }
   float *weight = (float*)malloc(oc*ic*fh*fw*sizeof(float));
   float *weight_ref = (float*)malloc(oc*ic*fh*fw*sizeof(float));
   for (int i = 0; i < oc*ic*fh*fw; i++) {
-    //weight[i] = rand() % 5;
-    weight[i] = 1;
+    weight[i] = rand() % 5;
+    //weight[i] = 1;
     weight_ref[i] = weight[i];
   }
   float *bias = (float*)malloc(oc*sizeof(float));
   float *bias_ref = (float*)malloc(oc*sizeof(float));
   for (int i = 0; i < oc; i++) {
-    //bias[i] = rand() % 5;
-    bias[i] = 1;
+    bias[i] = rand() % 5;
+    //bias[i] = 0;
     bias_ref[i] = bias[i];
   }
 
@@ -124,20 +115,23 @@ int main()
   // do conv_naive as reference
   conv_naive(input_ref, weight_ref, output_ref, bias_ref,
              nb, ic, ih, iw, oc, oh, ow ,fh, fw, s, p);
-  
+
   // infer algorithm
   ConvAlg alg;
-  infer_conv_alg(nb, ic/4, ih, iw, oh, ow, oc/4, fh, fw, s, p, &alg);
+  infer_conv_alg(nb, ic/4, ih, iw, oc/4, oh, ow, fh, fw, s, p, &alg);
 
   // setup buffer
   int buf_bytes;
   conv_buffer_size(nb, ic, ih, iw, oc, oh, ow, fh, fw, s, p, alg, &buf_bytes);
   float *buf = (float*)malloc(buf_bytes);
+  memset(buf, 0, buf_bytes);
 
   // transform weight
   int wtm_bytes;
   weight_trans_size(nb, ic, ih, iw, oc, oh, ow, fh, fw, s, p, alg, &wtm_bytes);
   float *wtm = (float*)malloc(wtm_bytes);
+  memset(wtm, 0, wtm_bytes);
+  
   weight_trans(weight, wtm, ic, oc, fh, fw, alg);
 
   // do conv

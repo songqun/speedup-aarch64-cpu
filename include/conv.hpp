@@ -139,7 +139,7 @@ void output_trans_wino(const float *output, float *output_tm);
  * infer conv algorithm
  * Assume ic and oc have been divided by 4
  */
-void infer_conv_alg(int nb, int ic, int ih, int iw, int oh, int ow, int oc,
+void infer_conv_alg(int nb, int ic, int ih, int iw, int oc, int oh, int ow,
                     int fh, int fw, int s, int p, ConvAlg *alg);
 
 
@@ -147,7 +147,7 @@ void infer_conv_alg(int nb, int ic, int ih, int iw, int oh, int ow, int oc,
  * compute buffer size for specific conv algorithm
  * Assume ic and oc have been divided by 4
  */
-void conv_buffer_size(int nb, int ic, int ih, int iw, int oh, int ow, int oc, int fh, int fw, int s, int p, ConvAlg alg, int *bytes);
+void conv_buffer_size(int nb, int ic, int ih, int iw, int oc, int oh, int ow, int fh, int fw, int s, int p, ConvAlg alg, int *bytes);
 
 
 /*
@@ -155,4 +155,4 @@ void conv_buffer_size(int nb, int ic, int ih, int iw, int oh, int ow, int oc, in
  * normally it equals to original weight size
  * it does not in winograd
  */
-void weight_trans_size(int nb, int ic, int ih, int iw, int oh, int ow, int oc, int fh, int fw, int s, int p, ConvAlg alg, int *bytes);
+void weight_trans_size(int nb, int ic, int ih, int iw, int oc, int oh, int ow, int fh, int fw, int s, int p, ConvAlg alg, int *bytes);

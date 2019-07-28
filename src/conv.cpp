@@ -12,7 +12,7 @@ void get_output_hw(int ih, int iw, int fh, int fw, int s, int p, int *oh, int *o
 }
 
 
-void infer_conv_alg(int nb, int ic, int ih, int iw, int oh, int ow, int oc, int fh, int fw, int s, int p, ConvAlg *alg)
+void infer_conv_alg(int nb, int ic, int ih, int iw, int oc, int oh, int ow, int fh, int fw, int s, int p, ConvAlg *alg)
 {
   // TODO make implementations more general when there are remainders.
   if (fh==1 && fw==1 && s==1 && p==0
@@ -29,7 +29,7 @@ void infer_conv_alg(int nb, int ic, int ih, int iw, int oh, int ow, int oc, int 
 }
 
 
-void conv_buffer_size(int nb, int ic, int ih, int iw, int oh, int ow, int oc, int fh, int fw, int s, int p, ConvAlg alg, int *bytes)
+void conv_buffer_size(int nb, int ic, int ih, int iw, int oc, int oh, int ow, int fh, int fw, int s, int p, ConvAlg alg, int *bytes)
 {
   switch(alg) {
     case CONV_1X1S1P0:
@@ -53,7 +53,7 @@ void conv_buffer_size(int nb, int ic, int ih, int iw, int oh, int ow, int oc, in
 }
 
 
-void weight_trans_size(int nb, int ic, int ih, int iw, int oh, int ow, int oc, int fh, int fw, int s, int p, ConvAlg alg, int *bytes)
+void weight_trans_size(int nb, int ic, int ih, int iw, int oc, int oh, int ow, int fh, int fw, int s, int p, ConvAlg alg, int *bytes)
 {
   switch(alg) {
     case CONV_WINO_TWO_STEP:
@@ -63,6 +63,7 @@ void weight_trans_size(int nb, int ic, int ih, int iw, int oh, int ow, int oc, i
       *bytes = ic*oc*fh*fw;
       break;
   }
+  *bytes *= sizeof(float);
 }
 
 
