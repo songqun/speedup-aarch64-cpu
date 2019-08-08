@@ -9,7 +9,7 @@ void conv_naive(float *input, float *weight, float *output, float *bias,
                 int nb, int ic, int ih, int iw, int oc, int oh, int ow, int fh, int fw, int s, int p)
 {
   float *in = (float*)malloc(nb*ic*ih*iw*sizeof(float));
-  float *out = (float*)malloc(nb*oc*oh*ow);
+  float *out = (float*)malloc(nb*oc*oh*ow*sizeof(float));
   // NCHWc4 => NCHW
   for (int n = 0; n < nb; n++) {
     for (int c = 0; c < ic/4; c++) {
@@ -74,7 +74,7 @@ void compare(float *output, float *output_ref, float out_size)
 int main()
 {
   // setup params
-  int nb = 1, ic = 4, oc = 8, ih = 4, iw = 4, fh = 1, fw = 1, s = 1, p = 0;
+  int nb = 1, ic = 16, oc = 24, ih = 16, iw = 16, fh = 1, fw = 1, s = 2, p = 0;
 
   if (ic%4 != 0 || oc%8 != 0 || fh != fw) {
     std::cerr << "Not support.\n";
@@ -85,8 +85,8 @@ int main()
   float *input = (float*)malloc(nb*ic*ih*iw*sizeof(float));
   float *input_ref = (float*)malloc(nb*ic*ih*iw*sizeof(float));
   for (int i = 0; i < nb*ic*ih*iw; i++) {
-    input[i] = rand() % 5;
-    //input[i] = 1;
+    //input[i] = rand() % 5;
+    input[i] = 1;
     input_ref[i] = input[i];
   }
   float *weight = (float*)malloc(oc*ic*fh*fw*sizeof(float));
@@ -146,6 +146,8 @@ int main()
   free(weight_ref);
   free(output);
   free(output_ref);
+  free(bias);
+  free(bias_ref);
   free(buf);
   free(wtm);
 }

@@ -15,10 +15,7 @@ void get_output_hw(int ih, int iw, int fh, int fw, int s, int p, int *oh, int *o
 void infer_conv_alg(int nb, int ic, int ih, int iw, int oc, int oh, int ow, int fh, int fw, int s, int p, ConvAlg *alg)
 {
   // TODO make implementations more general when there are remainders.
-  if (fh==1 && fw==1 && s==1 && p==0
-      && (oh*ow)%8==0) {
-    *alg = CONV_1X1S1P0;
-  } else if (fh==3 && fw==3 && s==1 && p==1
+  if (fh==3 && fw==3 && s==1 && p==1
              && oh%4==0 && ow%4==0 && (oh*ow)%128==0) {
     *alg = CONV_WINO_TWO_STEP;
   } else if (oh*ow%8==0){
@@ -32,10 +29,6 @@ void infer_conv_alg(int nb, int ic, int ih, int iw, int oc, int oh, int ow, int 
 void conv_buffer_size(int nb, int ic, int ih, int iw, int oc, int oh, int ow, int fh, int fw, int s, int p, ConvAlg alg, int *bytes)
 {
   switch(alg) {
-    case CONV_1X1S1P0:
-      // in_pack
-      *bytes = ic*oh*ow;
-      break;
     case CONV_WINO_TWO_STEP:
       *bytes = 0; //TODO
       break;
@@ -67,12 +60,9 @@ void weight_trans_size(int nb, int ic, int ih, int iw, int oc, int oh, int ow, i
 }
 
 
-void weight_trans(const float *weight, float *weight_tm, int ic, int oc, int fh, int fw, ConvAlg alg)
+void weight_trans(float *weight, float *weight_tm, int ic, int oc, int fh, int fw, ConvAlg alg)
 {
   switch(alg) {
-    case CONV_1X1S1P0:
-      weight_trans_1x1s1p0(weight, weight_tm, ic, oc, fh, fw);
-      break;
     case CONV_IM2COL:
       weight_trans_im2col(weight, weight_tm, ic, oc, fh, fw);
       break;
@@ -85,13 +75,10 @@ void weight_trans(const float *weight, float *weight_tm, int ic, int oc, int fh,
 }
 
 
-void conv(const float *input, const float *weight, float *output, const float *bias,
+void conv(float *input, float *weight, float *output, float *bias,
           int nb, int ic, int ih, int iw, int oc, int oh, int ow, int fh, int fw, int s, int p, float *buf, ConvAlg alg)
 {
   switch(alg) {
-    case CONV_1X1S1P0:
-      conv1x1s1p0(input, weight, output, bias, nb, ic/4, ih, iw, oc/4, oh, ow, fh, fw, s, p, buf);
-      break;
     case CONV_WINO_TWO_STEP:
       conv3x3s1p1_wino_two_step(input, weight, output, bias, nb, ic/4, ih, iw, oc/4, oh, ow, fh, fw, s, p, buf);
       break;

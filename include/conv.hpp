@@ -1,6 +1,5 @@
 enum ConvAlg
 {
-  CONV_1X1S1P0,
   CONV_WINO_TWO_STEP,
   CONV_WINO_ONE_STEP,
   CONV_IM2COL,
@@ -16,18 +15,19 @@ enum ConvAlg
  * computing kernel: sgemm_8x8
  * Assume ic and oc have been divided by 4
  */
-void conv(const float *input, const float *weight, float *output, const float *bias,
+void conv(float *input, float *weight, float *output, float *bias,
           int nb, int ic, int ih, int iw, int oc, int oh, int ow,
           int fh, int fw, int s, int p, float *buf, ConvAlg alg);
 
 
 /*
+ * not implement, combine with conv_im2col()
  * fh=fw=1, s=1, p=0. It is a GEMM
  * do input packing when first meet in computing. NCHWhw8c4 => NHWCc4hw8 (NCHWc4 => NHWChw8)
  * weight data layout: OCo8 (fh=fw=1)
  * Assume ic and oc have been divided by 4
  */
-void conv1x1s1p0(const float *input, const float *weight, float *output, const float *bias,
+void conv1x1s1p0(float *input, float *weight, float *output, float *bias,
                  int nb, int ic, int ih, int iw, int oc, int oh, int ow,
                  int fh, int fw, int s, int p, float *buf);
 
@@ -40,7 +40,7 @@ void conv1x1s1p0(const float *input, const float *weight, float *output, const f
  * weight data layout: N*(6*6)*O*T*C*o8 (T = oh/4*ow/4, tiles: nb of 6x6 block on one channel)
  * Assume ic and oc have been divided by 4
  */
-void conv3x3s1p1_wino_two_step(const float *input, const float *weight, float *output, const float *bias,
+void conv3x3s1p1_wino_two_step(float *input, float *weight, float *output, float *bias,
                                int nb, int ic, int ih, int iw, int oc, int oh, int ow,
                                int fh, int fw, int s, int p, float *buf);
 
@@ -49,12 +49,12 @@ void conv3x3s1p1_wino_two_step(const float *input, const float *weight, float *o
  * winograd, F(4x4, 6x6)
  * one step: do partly in_tm, then do dot prod on them, and transform them back
  * maybe better than two step for all data loaded into cache only once if blocked properly
- * input trans data layout: NCHWc4 => N*(6*6)*HW*C*hw8
- * output trans data layout: N*(6*6)*O*HW*o8 => NOHWo4
- * weight data layout: N*(6*6)*O*T*C*o8 (T = oh/4*ow/4, tiles: num of 6x6 block on one channel)
+ * input trans data layout: NCHWc4 => N*HW*(6*6)*C*hw8
+ * output trans data layout: N*O*HW*(6*6)*o8 => NOHWo4
+ * weight data layout: O*T*(6*6)*C*o8 (T = oh/4*ow/4, tiles: num of 6x6 block on one channel)
  * Assume ic and oc have been divided by 4
  */
-void conv3x3s1p1_wino_one_step(const float *input, const float *weight, float *output, const float *bias,
+void conv3x3s1p1_wino_one_step(float *input, float *weight, float *output, float *bias,
                                int nb, int ic, int ih, int iw, int oc, int oh, int ow,
                                int fh, int fw, int s, int p, float *buf);
 
@@ -66,7 +66,7 @@ void conv3x3s1p1_wino_one_step(const float *input, const float *weight, float *o
  * weight data layout: OHWCo8
  * Assume ic and oc have been divided by 4
  */
-void conv_im2col(const float *input, const float *weight, float *output, const float *bias,
+void conv_im2col(float *input, float *weight, float *output, float *bias,
                  int nb, int ic, int ih, int iw, int oc, int oh, int ow,
                  int fh, int fw, int s, int p, float *buf);
 
@@ -76,7 +76,7 @@ void conv_im2col(const float *input, const float *weight, float *output, const f
  * weight data layout: OCHWo8
  * Assume ic and oc have been divided by 4
  */
-void conv_direct(const float *input, const float *weight, float *output, const float *bias,
+void conv_direct(float *input, float *weight, float *output, float *bias,
                  int nb, int ic, int ih, int iw, int oc, int oh, int ow,
                  int fh, int fw, int s, int p, float *buf);
 
@@ -92,47 +92,48 @@ void get_output_hw(int ih, int iw, int fh, int fw, int s, int p, int *oh, int *o
  * no optimization because the weight with proper layout can be stored into model, 
  * and next time when we load the model, the weight has already been in proper layout.
  */
-void weight_trans(const float *weight, float *weight_tm, int ic, int oc, int fh, int fw, ConvAlg alg);
+void weight_trans(float *weight, float *weight_tm, int ic, int oc, int fh, int fw, ConvAlg alg);
 
 
 /*
+ * not implement, combine with conv_im2col()
  * weight data layout: OCo8 (fh=fw=1)
  */
-void weight_trans_1x1s1p0(const float *weight, float *weight_tm, int ic, int oc, int fh, int fw);
+void weight_trans_1x1s1p0(float *weight, float *weight_tm, int ic, int oc, int fh, int fw);
 
 
 /*
  * weight data layout: OHWCo8
  */
-void weight_trans_im2col(const float *weight, float *weight_tm, int ic, int oc, int fh, int fw);
+void weight_trans_im2col(float *weight, float *weight_tm, int ic, int oc, int fh, int fw);
 
 
 /*
  * maybe not implement
  * weight data layout: OCHWo8
  */
-void weight_trans_direct(const float *weight, float *weight_tm, int ic, int oc, int fh, int fw);
+void weight_trans_direct(float *weight, float *weight_tm, int ic, int oc, int fh, int fw);
 
 
 /*
  * winograd, F(4x4, 6x6)
  * weight data layout: N*(6*6)*O*T*C*o8 (T = oh/4*ow/4, tiles: num of 6x6 block on one channel)
  */
-void weight_trans_wino(const float *weight, float *weight_tm, int ic, int oc, int fh, int fw);
+void weight_trans_wino(float *weight, float *weight_tm, int ic, int oc, int fh, int fw);
 
 
 /*
  * winograd, F(4x4, 6x6)
  * input trans data layout: NCHWc4 => N*(6*6)*HW*C*hw8
  */
-void input_trans_wino(const float *input, float *input_tm);
+void input_trans_wino(float *input, float *input_tm);
 
 
 /*
  * winograd, F(4x4, 6x6)
  * output trans data layout: N*(6*6)*O*HW*o8 => NOHWo4
  */
-void output_trans_wino(const float *output, float *output_tm);
+void output_trans_wino(float *output, float *output_tm);
 
 
 /*
