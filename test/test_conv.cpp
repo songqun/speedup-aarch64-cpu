@@ -1,4 +1,5 @@
 #include "conv.hpp"
+#include "util.hpp"
 #include <iostream>
 #include <string.h>
 #include <math.h>
@@ -135,7 +136,11 @@ int main()
   weight_trans(weight, wtm, ic, oc, fh, fw, alg);
 
   // do conv
+  double start, end;
+  start = get_current_time();
   conv(input, wtm, output, bias, nb, ic, ih, iw, oc, oh, ow, fh, fw, s, p, buf, alg);
+  end = get_current_time();
+  std::cerr << end - start << " ms\n";
 
   // compare rst
   compare(output, output_ref, nb*oc*oh*ow);

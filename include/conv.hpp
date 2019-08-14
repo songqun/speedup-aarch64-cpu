@@ -2,7 +2,8 @@ enum ConvAlg
 {
   CONV_WINO_TWO_STEP,
   CONV_WINO_ONE_STEP,
-  CONV_IM2COL,
+  CONV_IM2COL_TOTAL_PACK,
+  CONV_IM2COL_TILE_PACK,
   CONV_NOT_MATCH,
 };
 
@@ -61,12 +62,26 @@ void conv3x3s1p1_wino_one_step(float *input, float *weight, float *output, float
 
 /*
  * im2col + GEMM, fit general case
- * only open 8*fh*fw*C buffer to do im2col when first meet in computing instead of HW*fh*fw*C for whole input
+ * open the whole HW*fh*fw*C buffer to do im2col when first meet in computing
+ * The output writing will be overlapped
  * do input packing when first meet. NCHWhw8c4 => NHWCc4hw8 (NCHWc4 => NHWChw8)
  * weight data layout: OHWCo8
  * Assume ic and oc have been divided by 4
  */
-void conv_im2col(float *input, float *weight, float *output, float *bias,
+void conv_im2col_total_pack(float *input, float *weight, float *output, float *bias,
+                 int nb, int ic, int ih, int iw, int oc, int oh, int ow,
+                 int fh, int fw, int s, int p, float *buf);
+
+
+/*
+ * im2col + GEMM, fit general case
+ * only open hw8*fh*fw*C buffer to do im2col when first meet in computing instead of HW*fh*fw*C for whole input
+ * But the output writing will be jumped
+ * do input packing when first meet. NCHWhw8c4 => NHWCc4hw8 (NCHWc4 => NHWChw8)
+ * weight data layout: OHWCo8
+ * Assume ic and oc have been divided by 4
+ */
+void conv_im2col_tile_pack(float *input, float *weight, float *output, float *bias,
                  int nb, int ic, int ih, int iw, int oc, int oh, int ow,
                  int fh, int fw, int s, int p, float *buf);
 
