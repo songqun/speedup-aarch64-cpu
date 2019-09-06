@@ -22,7 +22,12 @@ After depthwise-ConvOp being implementd, the benchmark will add MobileNetV2.
 
 ## TODO
 
-Add more Operators and support End-to-End benchmark.
+* Add more Operators and support End-to-End benchmarks.
+* Add float16, int8.
+* Design own model serialization format and add model transform tools.
+* Support multi-threading.
+* Support other hardware like Vulkan, X86, CUDA...
+
 
 ## How to compile
 
@@ -39,14 +44,27 @@ For cross-compiling onto aarch64, the simplest way is following [NCNN's way](htt
 
 `cmake -DCMAKE_TOOLCHAIN_FILE=${PATH}/crosscompiler.toolchain.cmake ..`
 
-## General Idea
+
+**float16 needs very high version of gcc and clang.**
+
+## General Opimization Idea
 
 * SIMD
 * Packing
 * Blocking
 * Instruction Reorder
 
-TODO: More description in detail
+TODO: More description in detail.
+
+## Convolution Algorithm
+
+* im2col
+* winograd
+* direct (not implement)
+
+TODO: More description in detail.
+
+The header <b>conv.hpp</b> also includes some details.
 
 <!--
 ## Trick
