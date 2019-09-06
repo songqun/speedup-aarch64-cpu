@@ -75,7 +75,7 @@ void compare(float *output, float *output_ref, float out_size)
 int main()
 {
   // setup params
-  int nb = 1, ic = 16, oc = 24, ih = 16, iw = 16, fh = 1, fw = 1, s = 2, p = 0;
+  int nb = 1, ic = 16, oc = 24, ih = 7, iw = 7, fh = 5, fw = 5, s = 1, p = 2;
 
   if (ic%4 != 0 || oc%8 != 0 || fh != fw) {
     std::cerr << "Not support.\n";
@@ -119,7 +119,11 @@ int main()
 
   // infer algorithm
   ConvAlg alg;
-  infer_conv_alg(nb, ic/4, ih, iw, oc/4, oh, ow, fh, fw, s, p, &alg);
+  infer_conv_alg(nb, ic, ih, iw, oc, oh, ow, fh, fw, s, p, &alg);
+  if (alg == CONV_NOT_MATCH) {
+    std::cerr << "No alg match.\n";
+    return -1;
+  }
 
   // setup buffer
   int buf_bytes;
@@ -155,4 +159,5 @@ int main()
   free(bias_ref);
   free(buf);
   free(wtm);
+  return 0;
 }

@@ -15,13 +15,15 @@ void get_output_hw(int ih, int iw, int fh, int fw, int s, int p, int *oh, int *o
 void infer_conv_alg(int nb, int ic, int ih, int iw, int oc, int oh, int ow, int fh, int fw, int s, int p, ConvAlg *alg)
 {
   // TODO make implementations more general when there are remainders.
+  if (ic%4 != 0 || oc%8 != 0) {
+    *alg = CONV_NOT_MATCH;
+    return;
+  }
   if (fh==3 && fw==3 && s==1 && p==1
              && oh%4==0 && ow%4==0 && (oh*ow)%128==0) {
     *alg = CONV_WINO_TWO_STEP;
-  } else if (oh*ow%8==0){
-    *alg = CONV_IM2COL_TOTAL_PACK; // OR TILE_PACK
   } else {
-    *alg = CONV_NOT_MATCH;
+    *alg = CONV_IM2COL_TOTAL_PACK; // OR TILE_PACK
   }
 }
 
