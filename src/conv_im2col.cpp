@@ -1,8 +1,11 @@
 #include "conv.hpp"
 #include "sgemm.hpp"
-#include <iostream>
 #include <stdlib.h>
 #include <string.h>
+
+#if defined(_USE_NEON_A55) || defined(_USE_NEON_A76)
+#include <arm_neon.h>
+#endif
 
 
 // More description see header for detail.
@@ -91,7 +94,48 @@ void conv_im2col_total_pack(float *input, float *weight, float *output, float *b
                 float *in_5 = in_mov + h5*iw_pad*4 + w5*4;
                 float *in_6 = in_mov + h6*iw_pad*4 + w6*4;
                 float *in_7 = in_mov + h7*iw_pad*4 + w7*4;
-                //TODO use neon
+        #if defined(_USE_NEON_A55) || defined(_USE_NEON_A76)
+                float32x4_t v0 = vld1q_f32(in_0);
+                float32x4_t v1 = vld1q_f32(in_1);
+                float32x4_t v2 = vld1q_f32(in_2);
+                float32x4_t v3 = vld1q_f32(in_3);
+                float32x4_t v4 = vld1q_f32(in_4);
+                float32x4_t v5 = vld1q_f32(in_5);
+                float32x4_t v6 = vld1q_f32(in_6);
+                float32x4_t v7 = vld1q_f32(in_7);
+                vst1q_f32(in_pack_fhfwic,
+                    vzip1q_f32(
+                        vzip1q_f32(vzip1q_f32(v0, v4), vzip1q_f32(v2, v6)),
+                        vzip1q_f32(vzip1q_f32(v1, v5), vzip1q_f32(v3, v7))));
+                vst1q_f32(in_pack_fhfwic + 4,
+                    vzip2q_f32(
+                        vzip1q_f32(vzip1q_f32(v0, v4), vzip1q_f32(v2, v6)),
+                        vzip1q_f32(vzip1q_f32(v1, v5), vzip1q_f32(v3, v7))));
+                vst1q_f32(in_pack_fhfwic + 4*2,
+                    vzip1q_f32(
+                        vzip2q_f32(vzip1q_f32(v0, v4), vzip1q_f32(v2, v6)),
+                        vzip2q_f32(vzip1q_f32(v1, v5), vzip1q_f32(v3, v7))));
+                vst1q_f32(in_pack_fhfwic + 4*3,
+                    vzip2q_f32(
+                        vzip2q_f32(vzip1q_f32(v0, v4), vzip1q_f32(v2, v6)),
+                        vzip2q_f32(vzip1q_f32(v1, v5), vzip1q_f32(v3, v7))));
+                vst1q_f32(in_pack_fhfwic + 4*4,
+                    vzip1q_f32(
+                        vzip1q_f32(vzip2q_f32(v0, v4), vzip2q_f32(v2, v6)),
+                        vzip1q_f32(vzip2q_f32(v1, v5), vzip2q_f32(v3, v7))));
+                vst1q_f32(in_pack_fhfwic + 4*5,
+                    vzip2q_f32(
+                        vzip1q_f32(vzip2q_f32(v0, v4), vzip2q_f32(v2, v6)),
+                        vzip1q_f32(vzip2q_f32(v1, v5), vzip2q_f32(v3, v7))));
+                vst1q_f32(in_pack_fhfwic + 4*6,
+                    vzip1q_f32(
+                        vzip2q_f32(vzip2q_f32(v0, v4), vzip2q_f32(v2, v6)),
+                        vzip2q_f32(vzip2q_f32(v1, v5), vzip2q_f32(v3, v7))));
+                vst1q_f32(in_pack_fhfwic + 4*7,
+                    vzip2q_f32(
+                        vzip2q_f32(vzip2q_f32(v0, v4), vzip2q_f32(v2, v6)),
+                        vzip2q_f32(vzip2q_f32(v1, v5), vzip2q_f32(v3, v7))));
+        #else
                 for (int c4 = 0; c4 < 4; c4++) {
                   in_pack_fhfwic[c4*8] = in_0[c4];
                   in_pack_fhfwic[c4*8 + 1] = in_1[c4];
@@ -102,6 +146,7 @@ void conv_im2col_total_pack(float *input, float *weight, float *output, float *b
                   in_pack_fhfwic[c4*8 + 6] = in_6[c4];
                   in_pack_fhfwic[c4*8 + 7] = in_7[c4];
                 }
+        #endif
               }
             }
           }
@@ -134,13 +179,28 @@ void conv_im2col_total_pack(float *input, float *weight, float *output, float *b
                 float *in_1 = in_mov + h1*iw_pad*4 + w1*4;
                 float *in_2 = in_mov + h2*iw_pad*4 + w2*4;
                 float *in_3 = in_mov + h3*iw_pad*4 + w3*4;
-                //TODO use neon
+        #if defined(_USE_NEON_A55) || defined(_USE_NEON_A76)
+                __asm__ __volatile__(
+                  "ldr q0, [%[in_0]]\n"
+                  "ldr q1, [%[in_1]]\n"
+                  "ldr q2, [%[in_2]]\n"
+                  "ldr q3, [%[in_3]]\n"
+                  "st4 {v0.4s, v1.4s, v2.4s, v3.4s}, [%[in_pack_fhfwic]]\n"
+                  :[in_pack_fhfwic]"+r"(in_pack_fhfwic)
+                  :[in_0]"r"(in_0),
+                   [in_1]"r"(in_1),
+                   [in_2]"r"(in_2),
+                   [in_3]"r"(in_3)
+                  :"memory", "cc", "q0", "q1", "q2", "q3"
+                );
+        #else
                 for (int c4 = 0; c4 < 4; c4++) {
                   in_pack_fhfwic[c4*4] = in_0[c4];
                   in_pack_fhfwic[c4*4 + 1] = in_1[c4];
                   in_pack_fhfwic[c4*4 + 2] = in_2[c4];
                   in_pack_fhfwic[c4*4 + 3] = in_3[c4];
                 }
+        #endif
               }
             }
           }
@@ -164,10 +224,12 @@ void conv_im2col_total_pack(float *input, float *weight, float *output, float *b
                 float* in_mov = in_pad + n*ic*ih_pad*iw_pad*4 + c*ih_pad*iw_pad*4 + fh_idx*iw_pad*4 + fw_idx*4;
                 float* in_pack_fhfwic = in_pack_hw + fh_idx*fw*ic*4*1 + fw_idx*ic*4*1 + c*4*1;
                 float *in_0 = in_mov + h0*iw_pad*4 + w0*4;
-                //TODO use neon
-                for (int c4 = 0; c4 < 4; c4++) {
-                  in_pack_fhfwic[c4] = in_0[c4];
-                }
+                //
+                // for (int c4 = 0; c4 < 4; c4++) {
+                //   in_pack_fhfwic[c4] = in_0[c4];
+                // }
+                //
+                memcpy(in_pack_fhfwic, in_0, 4*sizeof(float));
               }
             }
           }
@@ -212,6 +274,7 @@ void conv_im2col_tile_pack(float *input, float *weight, float *output, float *bi
     // handle 8|hw
     for (int hw = 0; hw < ohow-7; hw+=8) {
       float *in_pack_hw = in_pack;
+      
       // input packing
       {
         int h0 = (hw/ow)*s;
@@ -243,7 +306,48 @@ void conv_im2col_tile_pack(float *input, float *weight, float *output, float *bi
               float *in_5 = in_mov + h5*iw_pad*4 + w5*4;
               float *in_6 = in_mov + h6*iw_pad*4 + w6*4;
               float *in_7 = in_mov + h7*iw_pad*4 + w7*4;
-              //TODO use neon
+      #if defined(_USE_NEON_A55) || defined(_USE_NEON_A76)
+              float32x4_t v0 = vld1q_f32(in_0);
+              float32x4_t v1 = vld1q_f32(in_1);
+              float32x4_t v2 = vld1q_f32(in_2);
+              float32x4_t v3 = vld1q_f32(in_3);
+              float32x4_t v4 = vld1q_f32(in_4);
+              float32x4_t v5 = vld1q_f32(in_5);
+              float32x4_t v6 = vld1q_f32(in_6);
+              float32x4_t v7 = vld1q_f32(in_7);
+              vst1q_f32(in_pack_fhfwic,
+                  vzip1q_f32(
+                      vzip1q_f32(vzip1q_f32(v0, v4), vzip1q_f32(v2, v6)),
+                      vzip1q_f32(vzip1q_f32(v1, v5), vzip1q_f32(v3, v7))));
+              vst1q_f32(in_pack_fhfwic + 4,
+                  vzip2q_f32(
+                      vzip1q_f32(vzip1q_f32(v0, v4), vzip1q_f32(v2, v6)),
+                      vzip1q_f32(vzip1q_f32(v1, v5), vzip1q_f32(v3, v7))));
+              vst1q_f32(in_pack_fhfwic + 4*2,
+                  vzip1q_f32(
+                      vzip2q_f32(vzip1q_f32(v0, v4), vzip1q_f32(v2, v6)),
+                      vzip2q_f32(vzip1q_f32(v1, v5), vzip1q_f32(v3, v7))));
+              vst1q_f32(in_pack_fhfwic + 4*3,
+                  vzip2q_f32(
+                      vzip2q_f32(vzip1q_f32(v0, v4), vzip1q_f32(v2, v6)),
+                      vzip2q_f32(vzip1q_f32(v1, v5), vzip1q_f32(v3, v7))));
+              vst1q_f32(in_pack_fhfwic + 4*4,
+                  vzip1q_f32(
+                      vzip1q_f32(vzip2q_f32(v0, v4), vzip2q_f32(v2, v6)),
+                      vzip1q_f32(vzip2q_f32(v1, v5), vzip2q_f32(v3, v7))));
+              vst1q_f32(in_pack_fhfwic + 4*5,
+                  vzip2q_f32(
+                      vzip1q_f32(vzip2q_f32(v0, v4), vzip2q_f32(v2, v6)),
+                      vzip1q_f32(vzip2q_f32(v1, v5), vzip2q_f32(v3, v7))));
+              vst1q_f32(in_pack_fhfwic + 4*6,
+                  vzip1q_f32(
+                      vzip2q_f32(vzip2q_f32(v0, v4), vzip2q_f32(v2, v6)),
+                      vzip2q_f32(vzip2q_f32(v1, v5), vzip2q_f32(v3, v7))));
+              vst1q_f32(in_pack_fhfwic + 4*7,
+                  vzip2q_f32(
+                      vzip2q_f32(vzip2q_f32(v0, v4), vzip2q_f32(v2, v6)),
+                      vzip2q_f32(vzip2q_f32(v1, v5), vzip2q_f32(v3, v7))));
+      #else
               for (int c4 = 0; c4 < 4; c4++) {
                 in_pack_fhfwic[c4*8] = in_0[c4];
                 in_pack_fhfwic[c4*8 + 1] = in_1[c4];
@@ -254,6 +358,7 @@ void conv_im2col_tile_pack(float *input, float *weight, float *output, float *bi
                 in_pack_fhfwic[c4*8 + 6] = in_6[c4];
                 in_pack_fhfwic[c4*8 + 7] = in_7[c4];
               }
+      #endif
             }
           }
         }
@@ -293,13 +398,28 @@ void conv_im2col_tile_pack(float *input, float *weight, float *output, float *bi
               float *in_1 = in_mov + h1*iw_pad*4 + w1*4;
               float *in_2 = in_mov + h2*iw_pad*4 + w2*4;
               float *in_3 = in_mov + h3*iw_pad*4 + w3*4;
-              //TODO use neon
+      #if defined(_USE_NEON_A55) || defined(_USE_NEON_A76)
+              __asm__ __volatile__(
+                "ldr q0, [%[in_0]]\n"
+                "ldr q1, [%[in_1]]\n"
+                "ldr q2, [%[in_2]]\n"
+                "ldr q3, [%[in_3]]\n"
+                "st4 {v0.4s, v1.4s, v2.4s, v3.4s}, [%[in_pack_fhfwic]]\n"
+                :[in_pack_fhfwic]"+r"(in_pack_fhfwic)
+                :[in_0]"r"(in_0),
+                  [in_1]"r"(in_1),
+                  [in_2]"r"(in_2),
+                  [in_3]"r"(in_3)
+                :"memory", "cc", "q0", "q1", "q2", "q3"
+              );
+      #else
               for (int c4 = 0; c4 < 4; c4++) {
                 in_pack_fhfwic[c4*4] = in_0[c4];
                 in_pack_fhfwic[c4*4 + 1] = in_1[c4];
                 in_pack_fhfwic[c4*4 + 2] = in_2[c4];
                 in_pack_fhfwic[c4*4 + 3] = in_3[c4];
               }
+      #endif
             }
           }
         }
@@ -330,10 +450,12 @@ void conv_im2col_tile_pack(float *input, float *weight, float *output, float *bi
               float* in_mov = in_pad + c*ih_pad*iw_pad*4 + fh_idx*iw_pad*4 + fw_idx*4;
               float* in_pack_fhfwic = in_pack_hw + fh_idx*fw*ic*4*1 + fw_idx*ic*4*1 + c*4*1;
               float *in_0 = in_mov + h0*iw_pad*4 + w0*4;
-              //TODO use neon
-              for (int c4 = 0; c4 < 4; c4++) {
-                in_pack_fhfwic[c4*1] = in_0[c4];
-              }
+              //
+              // for (int c4 = 0; c4 < 4; c4++) {
+              //   in_pack_fhfwic[c4] = in_0[c4];
+              // }
+              //
+              memcpy(in_pack_fhfwic, in_0, 4*sizeof(float));
             }
           }
         }

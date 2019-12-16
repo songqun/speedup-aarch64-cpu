@@ -13,6 +13,8 @@ Now, there are many open-source inference frameworks such as NCNN, MNN, and TVM.
 
 The test platform is RedMi 7 Pro, with Qualcomm Snapdragon 675, which is almost the cheapest SoC with Cortex-A55 and Cortex-76 now...
 
+The frequency of A55 is 1.66 GHz and A76 is 2.00 GHz.
+
 ## Benchmark
 Benchmarks will be updated in *benchmark* folder.
 

@@ -23,7 +23,8 @@ void infer_conv_alg(int nb, int ic, int ih, int iw, int oc, int oh, int ow, int 
              && oh%4==0 && ow%4==0 && (oh*ow)%128==0) {
     *alg = CONV_WINO_TWO_STEP;
   } else {
-    *alg = CONV_IM2COL_TOTAL_PACK; // OR TILE_PACK
+    //*alg = CONV_IM2COL_TOTAL_PACK; // OR TILE_PACK
+    *alg = CONV_IM2COL_TILE_PACK;
   }
 }
 

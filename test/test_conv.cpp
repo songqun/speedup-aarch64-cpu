@@ -75,7 +75,7 @@ void compare(float *output, float *output_ref, float out_size)
 int main()
 {
   // setup params
-  int nb = 1, ic = 16, oc = 24, ih = 7, iw = 7, fh = 5, fw = 5, s = 1, p = 2;
+  int nb = 1, ic = 16, oc = 64, ih = 56, iw = 56, fh = 1, fw = 1, s = 1, p = 0;
 
   if (ic%4 != 0 || oc%8 != 0 || fh != fw) {
     std::cerr << "Not support.\n";
@@ -147,7 +147,7 @@ int main()
   std::cerr << end - start << " ms\n";
 
   // compare rst
-  compare(output, output_ref, nb*oc*oh*ow);
+  //compare(output, output_ref, nb*oc*oh*ow);
 
   free(input);
   free(input_ref);
