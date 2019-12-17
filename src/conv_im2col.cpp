@@ -103,6 +103,14 @@ void conv_im2col_total_pack(float *input, float *weight, float *output, float *b
                 float32x4_t v5 = vld1q_f32(in_5);
                 float32x4_t v6 = vld1q_f32(in_6);
                 float32x4_t v7 = vld1q_f32(in_7);
+                __builtin_prefetch(in_0 + 64, 0, 3);
+                __builtin_prefetch(in_1 + 64, 0, 3);
+                __builtin_prefetch(in_2 + 64, 0, 3);
+                __builtin_prefetch(in_3 + 64, 0, 3);
+                __builtin_prefetch(in_4 + 64, 0, 3);
+                __builtin_prefetch(in_5 + 64, 0, 3);
+                __builtin_prefetch(in_6 + 64, 0, 3);
+                __builtin_prefetch(in_7 + 64, 0, 3);
                 vst1q_f32(in_pack_fhfwic,
                     vzip1q_f32(
                         vzip1q_f32(vzip1q_f32(v0, v4), vzip1q_f32(v2, v6)),
@@ -182,9 +190,13 @@ void conv_im2col_total_pack(float *input, float *weight, float *output, float *b
         #if defined(_USE_NEON_A55) || defined(_USE_NEON_A76)
                 __asm__ __volatile__(
                   "ldr q0, [%[in_0]]\n"
+                  "prfm pldl1keep, [%[in_0], #256]\n"
                   "ldr q1, [%[in_1]]\n"
+                  "prfm pldl1keep, [%[in_1], #256]\n"
                   "ldr q2, [%[in_2]]\n"
+                  "prfm pldl1keep, [%[in_2], #256]\n"
                   "ldr q3, [%[in_3]]\n"
+                  "prfm pldl1keep, [%[in_3], #256]\n"
                   "st4 {v0.4s, v1.4s, v2.4s, v3.4s}, [%[in_pack_fhfwic]]\n"
                   :[in_pack_fhfwic]"+r"(in_pack_fhfwic)
                   :[in_0]"r"(in_0),
@@ -230,6 +242,7 @@ void conv_im2col_total_pack(float *input, float *weight, float *output, float *b
                 // }
                 //
                 memcpy(in_pack_fhfwic, in_0, 4*sizeof(float));
+                __builtin_prefetch(in_0 + 64, 0, 3);
               }
             }
           }
@@ -274,7 +287,7 @@ void conv_im2col_tile_pack(float *input, float *weight, float *output, float *bi
     // handle 8|hw
     for (int hw = 0; hw < ohow-7; hw+=8) {
       float *in_pack_hw = in_pack;
-      
+
       // input packing
       {
         int h0 = (hw/ow)*s;
@@ -315,6 +328,14 @@ void conv_im2col_tile_pack(float *input, float *weight, float *output, float *bi
               float32x4_t v5 = vld1q_f32(in_5);
               float32x4_t v6 = vld1q_f32(in_6);
               float32x4_t v7 = vld1q_f32(in_7);
+              __builtin_prefetch(in_0 + 64, 0, 3);
+              __builtin_prefetch(in_1 + 64, 0, 3);
+              __builtin_prefetch(in_2 + 64, 0, 3);
+              __builtin_prefetch(in_3 + 64, 0, 3);
+              __builtin_prefetch(in_4 + 64, 0, 3);
+              __builtin_prefetch(in_5 + 64, 0, 3);
+              __builtin_prefetch(in_6 + 64, 0, 3);
+              __builtin_prefetch(in_7 + 64, 0, 3);
               vst1q_f32(in_pack_fhfwic,
                   vzip1q_f32(
                       vzip1q_f32(vzip1q_f32(v0, v4), vzip1q_f32(v2, v6)),
@@ -401,9 +422,13 @@ void conv_im2col_tile_pack(float *input, float *weight, float *output, float *bi
       #if defined(_USE_NEON_A55) || defined(_USE_NEON_A76)
               __asm__ __volatile__(
                 "ldr q0, [%[in_0]]\n"
+                "prfm pldl1keep, [%[in_0], #256]\n"
                 "ldr q1, [%[in_1]]\n"
+                "prfm pldl1keep, [%[in_1], #256]\n"
                 "ldr q2, [%[in_2]]\n"
+                "prfm pldl1keep, [%[in_2], #256]\n"
                 "ldr q3, [%[in_3]]\n"
+                "prfm pldl1keep, [%[in_3], #256]\n"
                 "st4 {v0.4s, v1.4s, v2.4s, v3.4s}, [%[in_pack_fhfwic]]\n"
                 :[in_pack_fhfwic]"+r"(in_pack_fhfwic)
                 :[in_0]"r"(in_0),
@@ -456,6 +481,7 @@ void conv_im2col_tile_pack(float *input, float *weight, float *output, float *bi
               // }
               //
               memcpy(in_pack_fhfwic, in_0, 4*sizeof(float));
+              __builtin_prefetch(in_0 + 64, 0, 3);
             }
           }
         }

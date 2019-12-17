@@ -19,11 +19,16 @@ void infer_conv_alg(int nb, int ic, int ih, int iw, int oc, int oh, int ow, int 
     *alg = CONV_NOT_MATCH;
     return;
   }
+
+  /*
   if (fh==3 && fw==3 && s==1 && p==1
              && oh%4==0 && ow%4==0 && (oh*ow)%128==0) {
     *alg = CONV_WINO_TWO_STEP;
+  }
+  */
+  if (ih < 24 && iw < 24) {     // just guess threshold (between 14 and 28)
+    *alg = CONV_IM2COL_TOTAL_PACK;
   } else {
-    //*alg = CONV_IM2COL_TOTAL_PACK; // OR TILE_PACK
     *alg = CONV_IM2COL_TILE_PACK;
   }
 }
