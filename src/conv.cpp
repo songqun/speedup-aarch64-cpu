@@ -38,7 +38,17 @@ void conv_buffer_size(int nb, int ic, int ih, int iw, int oc, int oh, int ow, in
 {
   switch(alg) {
     case CONV_WINO_ONE_STEP: {
-      *bytes = 0; //TODO
+      int tile_h = (oh + 3) / 4;
+      int tile_w = (ow + 3) / 4;
+      int p_left = p;
+      int p_w_mod_4 = tile_w*4 - ow;
+      int p_right = p + p_w_mod_4;
+      int p_top = p;
+      int p_h_mod_4 = tile_h*4 - oh;
+      int p_bottom = p + p_h_mod_4;
+      int ih_pad = ih + p_top + p_bottom;   // pad to 4|ih_pad(iw_pad) for 4x4 block input transform to 6x6 block
+      int iw_pad = iw + p_left + p_right;
+      *bytes = ic*ih_pad*iw_pad + 6*6*ic*8 + oc*6*6*8;
       break;
     }
     case CONV_IM2COL_TOTAL_PACK: {

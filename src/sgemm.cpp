@@ -503,6 +503,7 @@ void sgemm_1x8(float *in, float *wgt, float *out_0, float *out_1,
 }
 
 
+// NOT USED
 void sgemm_8x4(float *in, float *wgt, float *out_0, float *b_0, int k)
 {
   for (int c = 0; c < k; c++) {
