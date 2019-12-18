@@ -3,15 +3,15 @@
 #include <stdlib.h>
 #include <string.h>
 
-#if defined(_USE_NEON_A55) || defined(_USE_NEON_A76)
-#include <arm_neon.h>
-#endif
-
 
 // More description see header for detail.
 
 
-inline void trans_W_4x4_3x3(float* Fw[36], float* F[9])
+#if defined(_USE_NEON_A55) || defined(_USE_NEON_A76)
+#include <arm_neon.h>
+
+
+void trans_W_4x4_3x3(float* WTM[36], float* W[9])
 {
   float T[6][3][8];
 
@@ -23,19 +23,19 @@ inline void trans_W_4x4_3x3(float* Fw[36], float* F[9])
   float32x4_t v_025 = vmovq_n_f32(0.25f);
 
   for (int i = 0; i < 3; i++) {
-      float32x4_t v_F0 = vld1q_f32(F[0*3+i]);
-      float32x4_t v_F1 = vld1q_f32(F[1*3+i]);
-      float32x4_t v_F2 = vld1q_f32(F[2*3+i]);
+      float32x4_t v_W0 = vld1q_f32(W[0*3+i]);
+      float32x4_t v_W1 = vld1q_f32(W[1*3+i]);
+      float32x4_t v_W2 = vld1q_f32(W[2*3+i]);
 
-      float32x4_t v_t0 = vmulq_f32(v_01666, v_F2);
-      float32x4_t v_t1 = vsubq_f32(vmulq_f32(v_minus_01666, v_F0), v_t0);
-      float32x4_t v_t2 = vfmaq_f32(v_t0, v_004166, v_F0);
+      float32x4_t v_t0 = vmulq_f32(v_01666, v_W2);
+      float32x4_t v_t1 = vsubq_f32(vmulq_f32(v_minus_01666, v_W0), v_t0);
+      float32x4_t v_t2 = vfmaq_f32(v_t0, v_004166, v_W0);
 
-      float32x4_t v_T0 = vmulq_f32(v_025, v_F0);
-      float32x4_t v_T1 = vfmaq_f32(v_t1, v_minus_01666, v_F1);
-      float32x4_t v_T2 = vfmaq_f32(v_t1, v_01666, v_F1);
-      float32x4_t v_T3 = vfmaq_f32(v_t2, v_00833, v_F1);
-      float32x4_t v_T4 = vfmaq_f32(v_t2, v_minus_00833, v_F1);
+      float32x4_t v_T0 = vmulq_f32(v_025, v_W0);
+      float32x4_t v_T1 = vfmaq_f32(v_t1, v_minus_01666, v_W1);
+      float32x4_t v_T2 = vfmaq_f32(v_t1, v_01666, v_W1);
+      float32x4_t v_T3 = vfmaq_f32(v_t2, v_00833, v_W1);
+      float32x4_t v_T4 = vfmaq_f32(v_t2, v_minus_00833, v_W1);
 
       vst1q_f32(T[0][i], v_T0);
       vst1q_f32(T[1][i], v_T1);
@@ -53,23 +53,23 @@ inline void trans_W_4x4_3x3(float* Fw[36], float* F[9])
       float32x4_t v_t1 = vsubq_f32(vmulq_f32(v_minus_01666, v_T0), v_t0);
       float32x4_t v_t2 = vfmaq_f32(v_t0, v_004166, v_T0);
 
-      float32x4_t v_Fw0 = vmulq_f32(v_025, v_T0);
-      float32x4_t v_Fw1 = vfmaq_f32(v_t1, v_minus_01666, v_T1);
-      float32x4_t v_Fw2 = vfmaq_f32(v_t1, v_01666, v_T1);
-      float32x4_t v_Fw3 = vfmaq_f32(v_t2, v_00833, v_T1);
-      float32x4_t v_Fw4 = vfmaq_f32(v_t2, v_minus_00833, v_T1);
+      float32x4_t v_WTM0 = vmulq_f32(v_025, v_T0);
+      float32x4_t v_WTM1 = vfmaq_f32(v_t1, v_minus_01666, v_T1);
+      float32x4_t v_WTM2 = vfmaq_f32(v_t1, v_01666, v_T1);
+      float32x4_t v_WTM3 = vfmaq_f32(v_t2, v_00833, v_T1);
+      float32x4_t v_WTM4 = vfmaq_f32(v_t2, v_minus_00833, v_T1);
 
-      vst1q_f32(Fw[i*6+0], v_Fw0);
-      vst1q_f32(Fw[i*6+1], v_Fw1);
-      vst1q_f32(Fw[i*6+2], v_Fw2);
-      vst1q_f32(Fw[i*6+3], v_Fw3);
-      vst1q_f32(Fw[i*6+4], v_Fw4);
-      vst1q_f32(Fw[i*6+5], v_T2);
+      vst1q_f32(WTM[i*6+0], v_WTM0);
+      vst1q_f32(WTM[i*6+1], v_WTM1);
+      vst1q_f32(WTM[i*6+2], v_WTM2);
+      vst1q_f32(WTM[i*6+3], v_WTM3);
+      vst1q_f32(WTM[i*6+4], v_WTM4);
+      vst1q_f32(WTM[i*6+5], v_T2);
   }
 }
 
 
-inline void trans_O_4x4_3x3(float* Ow[36], float* O[16], float* bias,
+void trans_O_4x4_3x3(float* OTM[36], float* O[16], float* bias,
     int h, int w, int _pad_h_mod_4, int _pad_w_mod_4, int oh, int ow)
 {
   float T[4][6][8];
@@ -82,22 +82,22 @@ inline void trans_O_4x4_3x3(float* Ow[36], float* O[16], float* bias,
   float32x4_t v_8 = vmovq_n_f32(8);
 
   for (int i = 0; i < 6; i++) {
-      float32x4_t v_Ow0 = vld1q_f32(Ow[i]);
-      float32x4_t v_Ow1 = vld1q_f32(Ow[1*6+i]);
-      float32x4_t v_Ow2 = vld1q_f32(Ow[2*6+i]);
-      float32x4_t v_Ow3 = vld1q_f32(Ow[3*6+i]);
-      float32x4_t v_Ow4 = vld1q_f32(Ow[4*6+i]);
-      float32x4_t v_Ow5 = vld1q_f32(Ow[5*6+i]);
+      float32x4_t v_OTM0 = vld1q_f32(OTM[i]);
+      float32x4_t v_OTM1 = vld1q_f32(OTM[1*6+i]);
+      float32x4_t v_OTM2 = vld1q_f32(OTM[2*6+i]);
+      float32x4_t v_OTM3 = vld1q_f32(OTM[3*6+i]);
+      float32x4_t v_OTM4 = vld1q_f32(OTM[4*6+i]);
+      float32x4_t v_OTM5 = vld1q_f32(OTM[5*6+i]);
 
-      float32x4_t v_t0 = vaddq_f32(v_Ow1, v_Ow2);
-      float32x4_t v_t1 = vaddq_f32(v_Ow3, v_Ow4);
-      float32x4_t v_t2 = vsubq_f32(v_Ow1, v_Ow2);
-      float32x4_t v_t3 = vsubq_f32(v_Ow3, v_Ow4);
+      float32x4_t v_t0 = vaddq_f32(v_OTM1, v_OTM2);
+      float32x4_t v_t1 = vaddq_f32(v_OTM3, v_OTM4);
+      float32x4_t v_t2 = vsubq_f32(v_OTM1, v_OTM2);
+      float32x4_t v_t3 = vsubq_f32(v_OTM3, v_OTM4);
 
-      float32x4_t v_T0 = vaddq_f32(vaddq_f32(v_t0, v_t1), v_Ow0);
+      float32x4_t v_T0 = vaddq_f32(vaddq_f32(v_t0, v_t1), v_OTM0);
       float32x4_t v_T1 = vfmaq_f32(v_t2, v_t3, v_2);
       float32x4_t v_T2 = vfmaq_f32(v_t0, v_t1, v_4);
-      float32x4_t v_T3 = vaddq_f32(vfmaq_f32(v_t2, v_t3, v_8), v_Ow5);
+      float32x4_t v_T3 = vaddq_f32(vfmaq_f32(v_t2, v_t3, v_8), v_OTM5);
 
       vst1q_f32(T[0][i], v_T0);
       vst1q_f32(T[1][i], v_T1);
@@ -152,7 +152,7 @@ inline void trans_O_4x4_3x3(float* Ow[36], float* O[16], float* bias,
 }
 
 
-inline void trans_I_4x4_3x3(float* Iw[36], float* I[36])
+void trans_I_4x4_3x3(float* ITM[36], float* I[36])
 {
   float T[6][6][8];
 
@@ -206,31 +206,68 @@ inline void trans_I_4x4_3x3(float* Iw[36], float* I[36])
       float32x4_t v_t4 = vfmaq_f32(v_T4, v_T0, v_4);
       float32x4_t v_t5 = vfmaq_f32(v_T5, v_T1, v_4);
 
-      float32x4_t v_Iw0 = vfmaq_f32(v_t4, v_T2, v_minus_5);
-      float32x4_t v_Iw1 = vaddq_f32(v_t1, v_t0);
-      float32x4_t v_Iw2 = vsubq_f32(v_t0, v_t1);
-      float32x4_t v_Iw3 = vaddq_f32(v_t3, v_t2);
-      float32x4_t v_Iw4 = vsubq_f32(v_t2, v_t3);
-      float32x4_t v_Iw5 = vfmaq_f32(v_t5, v_T3, v_minus_5);
+      float32x4_t v_ITM0 = vfmaq_f32(v_t4, v_T2, v_minus_5);
+      float32x4_t v_ITM1 = vaddq_f32(v_t1, v_t0);
+      float32x4_t v_ITM2 = vsubq_f32(v_t0, v_t1);
+      float32x4_t v_ITM3 = vaddq_f32(v_t3, v_t2);
+      float32x4_t v_ITM4 = vsubq_f32(v_t2, v_t3);
+      float32x4_t v_ITM5 = vfmaq_f32(v_t5, v_T3, v_minus_5);
       
-      vst1q_f32(Iw[i*6+0], v_Iw0);
-      vst1q_f32(Iw[i*6+1], v_Iw1);
-      vst1q_f32(Iw[i*6+2], v_Iw2);
-      vst1q_f32(Iw[i*6+3], v_Iw3);
-      vst1q_f32(Iw[i*6+4], v_Iw4);
-      vst1q_f32(Iw[i*6+5], v_Iw5);
+      vst1q_f32(ITM[i*6+0], v_ITM0);
+      vst1q_f32(ITM[i*6+1], v_ITM1);
+      vst1q_f32(ITM[i*6+2], v_ITM2);
+      vst1q_f32(ITM[i*6+3], v_ITM3);
+      vst1q_f32(ITM[i*6+4], v_ITM4);
+      vst1q_f32(ITM[i*6+5], v_ITM5);
   }
 }
 
 
 void weight_trans_wino(float *weight, float *weight_tm, int ic, int oc, int fh, int fw)
 {
-  
+  if (fh != 3 || fw != 3) {
+    std::cerr << "weight_trans_wino() fh fw not equal to 3.\n";
+    return;
+  }
+  for (int o = 0; o < oc/8; o++) {
+    for (int c = 0; c < ic; c++) {
+      int wgt_off_0 = (o*8)*ic*3*3 + c*3*3;
+      int wgt_off_1 = (o*8+4)*ic*3*3 + c*3*3;
+      int wtm_off_0 = o*36*ic*8 + c*8;
+      int wtm_off_1 = o*36*ic*8 + c*8 + 4;
+      float W[9][4];
+      float *W_ptr[9];
+      float *WTM[36];
+      for (int hw = 0; hw < 9; hw++) {
+        for (int o4 = 0; o4 < 4; o++) {
+          W[hw][o4] = weight[wgt_off_0 + hw + o4*ic*fh*fw];
+        }
+        W_ptr[hw] = W[hw];
+      }
+      for (int hw = 0; hw < 36; hw++) {
+        WTM[hw] = weight_tm + wtm_off_0 + hw*ic*8;
+      }
+      trans_W_4x4_3x3(WTM, W_ptr);
+      for (int hw = 0; hw < 9; hw++) {
+        for (int o4 = 0; o4 < 4; o++) {
+          W[hw][o4] = weight[wgt_off_1 + hw + o4*ic*fh*fw];
+        }
+        W_ptr[hw] = W[hw];
+      }
+      for (int hw = 0; hw < 36; hw++) {
+        WTM[hw] = weight_tm + wtm_off_1 + hw*ic*8;
+      }
+      trans_W_4x4_3x3(WTM, W_ptr);
+    }
+  }
 }
 
 
-void conv3x3s1p1_wino_two_step(float *input, float *weight, float *output, float *bias,
+void conv3x3s1p1_wino_one_step(float *input, float *weight, float *output, float *bias,
                  int nb, int ic, int ih, int iw, int oc, int oh, int ow, int fh, int fw, int s, int p, float *buf)
 {
 
 }
+
+
+#endif // USE_NEON_A55 || USE_NEON_A76

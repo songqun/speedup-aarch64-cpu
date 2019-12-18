@@ -3,7 +3,7 @@ A computing kernel implementation in ML inference framework aiming at theoretica
 
 The basic supported data type is for <b>float32</b>. But it will support <b>float16</b> and <b>int8</b>. On Cortex-A55 and Cortex-A76, they support vec-inst <b>fmla</b> in float16 and <b>sdot/udot</b> in int8, not only in storage but also in computation. Thus the computation peak of float16 and int8 will be 2 and 4 times than float32 on Cortex-A55 and Cortex-A76.
 
-The data layout is packed by veg-reg length in the whole project, which means <b>NCHWc4</b> in float32, <b>NCHWc8</b> in float16, and <b>NCHWc16</b> in int8.
+The data layout is packed by vec-reg length in the whole project, which means <b>NCHWc4</b> in float32, <b>NCHWc8</b> in float16, and <b>NCHWc16</b> in int8.
 
 The project will first implement <b>ConvOp</b> because ConvOp will occupy most time in inference (50% to 80%). ConvOp will be implemented in multiple ways/algorithms in order to optimize different sizes.
 
@@ -24,11 +24,10 @@ After depthwise-ConvOp being implementd, the benchmark will add MobileNetV2.
 
 ## TODO
 
-* Add more Operators and support End-to-End benchmarks.
-* Add float16, int8.
-* Design own model serialization format and add model transform tools.
-* Support multi-threading.
+* implement sgemm12x8 using 32 vec-reg fully.
 * Support other hardware like Vulkan, X86, CUDA...
+* Add float16, int8.
+* Support multi-threading.
 
 
 ## How to compile

@@ -20,13 +20,13 @@ void infer_conv_alg(int nb, int ic, int ih, int iw, int oc, int oh, int ow, int 
     return;
   }
 
-  /*
-  if (fh==3 && fw==3 && s==1 && p==1
-             && oh%4==0 && ow%4==0 && (oh*ow)%128==0) {
-    *alg = CONV_WINO_TWO_STEP;
-  }
-  */
+#if defined(_USE_NEON_A55) || defined(_USE_NEON_A76)
+  if (fh==3 && fw==3 && s==1 && p==1) {
+    *alg = CONV_WINO_ONE_STEP;
+  } else if (ih < 24 && iw < 24) {
+#else
   if (ih < 24 && iw < 24) {     // just guess threshold (between 14 and 28)
+#endif
     *alg = CONV_IM2COL_TOTAL_PACK;
   } else {
     *alg = CONV_IM2COL_TILE_PACK;
@@ -37,7 +37,7 @@ void infer_conv_alg(int nb, int ic, int ih, int iw, int oc, int oh, int ow, int 
 void conv_buffer_size(int nb, int ic, int ih, int iw, int oc, int oh, int ow, int fh, int fw, int s, int p, ConvAlg alg, int *bytes)
 {
   switch(alg) {
-    case CONV_WINO_TWO_STEP: {
+    case CONV_WINO_ONE_STEP: {
       *bytes = 0; //TODO
       break;
     }
@@ -66,7 +66,7 @@ void conv_buffer_size(int nb, int ic, int ih, int iw, int oc, int oh, int ow, in
 void weight_trans_size(int nb, int ic, int ih, int iw, int oc, int oh, int ow, int fh, int fw, int s, int p, ConvAlg alg, int *bytes)
 {
   switch(alg) {
-    case CONV_WINO_TWO_STEP: {
+    case CONV_WINO_ONE_STEP: {
       *bytes = ic*oc*6*6;
       break;
     }
@@ -90,7 +90,7 @@ void weight_trans(float *weight, float *weight_tm, int ic, int oc, int fh, int f
       weight_trans_im2col(weight, weight_tm, ic, oc, fh, fw);
       break;
     }
-    case CONV_WINO_TWO_STEP: {
+    case CONV_WINO_ONE_STEP: {
       weight_trans_wino(weight, weight_tm, ic, oc, fh, fw);
       break;
     }
@@ -105,8 +105,8 @@ void conv(float *input, float *weight, float *output, float *bias,
           int nb, int ic, int ih, int iw, int oc, int oh, int ow, int fh, int fw, int s, int p, float *buf, ConvAlg alg)
 {
   switch(alg) {
-    case CONV_WINO_TWO_STEP: {
-      conv3x3s1p1_wino_two_step(input, weight, output, bias, nb, ic, ih, iw, oc, oh, ow, fh, fw, s, p, buf);
+    case CONV_WINO_ONE_STEP: {
+      conv3x3s1p1_wino_one_step(input, weight, output, bias, nb, ic, ih, iw, oc, oh, ow, fh, fw, s, p, buf);
       break;
     }
     case CONV_IM2COL_TOTAL_PACK: {
