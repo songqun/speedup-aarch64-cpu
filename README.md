@@ -59,6 +59,7 @@ Urgent:
 
 Further:
 * Add more detail descriptions how to write a high-performance kernel.
+* Comparison with Paddle-lite, tf-lite, pytorch-lite, even TVM.
 * Support other hardware like Vulkan, X86, CUDA...build the speedup world !
 * Add float16, int8.
 * Support multi-threading.
