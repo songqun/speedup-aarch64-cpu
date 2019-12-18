@@ -18,14 +18,47 @@ The frequency of A55 is 1.66 GHz and A76 is 2.00 GHz.
 ## Benchmark
 Benchmarks will be updated in *benchmark* folder.
 
-It will include tables comparing FLOPS and time between the project and other open-source inference framework in ConvOp firstly. The size of ConvOp will be based on GoogLeNet and ResNet50.
+It includes table comparing time between the project and other open-source inference framework in ConvOp. The size of ConvOp now is based on ResNet50. I will test more further like Squeezenet, GoogLenet, vgg...
 
 After depthwise-ConvOp being implementd, the benchmark will add MobileNetV2.
 
+The summary of the benchmark is shown below, based on <b>fp32</b>:
+|  conv type  | ih | iw |  ic  |  oc  | computation amount | theoretical time on A55 | my time  on A55 | percent % | NCNN time on A55 | MNN time on A55 |
+|:-----------:|----|----|:----:|:----:|:------------------:|:-----------------------:|:---------------:|:---------:|:----------------:|:---------------:|
+| conv1x1s1p0 | 56 | 56 | 64   | 256  | 51380224           |          7.517          |      10.841     |     69    | 14.70            | 19.826          |
+|             | 56 | 56 | 256  | 64   | 51380224           |          7.517          |      11.279     |     67    | 17.87            | 19.85           |
+|             | 28 | 28 | 128  | 512  | 51380224           |          7.517          |      10.44      |     72    | 12.74            | 16.232          |
+|             | 28 | 28 | 512  | 128  | 51380224           |          7.517          |      12.26      |     61    | 15.37            | 18.617          |
+|             | 14 | 14 | 256  | 1024 | 51380224           |          7.517          |      9.887      |     76    | 12.97            | 16.304          |
+|             | 14 | 14 | 1024 | 256  | 51380224           |          7.517          |      11.98      |     63    | 15.81            | 22.696          |
+|             | 7  | 7  | 512  | 2048 | 51380224           |          7.517          |      11.54      |     65    | 13.33            | 19.045          |
+|             | 7  | 7  | 2048 | 512  | 51380224           |          7.517          |      12.262     |     61    | 13.84            | 22.407          |
+| conv3x3s1p1 | 56 | 56 | 64   | 64   | 115605504          |          16.913         |      15.17      |    111    | 23.50            | 18.736          |
+|             | 28 | 28 | 128  | 128  | 115605504          |          16.913         |      11.509     |    147    | 12.89            | 23.006          |
+|             | 14 | 14 | 256  | 256  | 115605504          |          16.913         |      13.816     |    122    | 20.67            | 22.703          |
+|             | 7  | 7  | 512  | 512  | 115605504          |          16.913         |      15.25      |    111    | 40.13            | 30.391          |
+
+I compare my kernel with popular used and fast inference framework on arm: NCNN and MNN. I'm faster on each size of ConvOp.
+
+I will add comparison with tf-lite, pytorch-lite further. In 'some' common sense, these two are much slower than NCNN and MNN.
+
+Paddle-lite is another very faster inference framework and I will add comparison with it further.
+
+Note that conv1x1s1p0 uses **conv_im2col** (though in fact no need to do im2col, just GEMM) and conv3x3s1p1 uses **conv_wino**(winograd algorithm to reduce computation amount) with the same SGEMM kernel. The idea percent of conv_im2col is 70-80% and conv_wino is 120-150% on little core.
+
+`Until now, I reach 60-70% of peak performance on little core (A55), close to my aim.`
+
+The further optimization idea is to implement sgemm12x8 kernel using 32 vec-reg fully. I predict that I will reach 65-75% of peak performance after that.
+
 ## TODO
 
+Urgent:
+* Optimization on A76 and do comparison
 * implement sgemm12x8 using 32 vec-reg fully.
-* Support other hardware like Vulkan, X86, CUDA...
+
+Further:
+* Add more detail descriptions how to write a high-performance kernel.
+* Support other hardware like Vulkan, X86, CUDA...build the speedup world !
 * Add float16, int8.
 * Support multi-threading.
 
@@ -67,7 +100,6 @@ TODO: More description in detail.
 
 The header <b>conv.hpp</b> also includes some details.
 
-<!--
 ## Trick
 
 On Cortex-A55, q-form <b>fmla</b> and <b>ldr</b> cannot be dual issue, so instruction reorder cannot fully hide <b>ldr</b> with <b>fmla</b>.  
@@ -76,11 +108,6 @@ So we need a computing kernel with computing / load ratio > 3.
 
 The kernel in this project is 
 
-sgemm_4x16: 4\*K matrix multiples K\*16 matrix.  
-Computing / load ratio is: (4(4\*1 weight)\*4(1 in)) / (1(4\*1 in) + 4(4\*1 weight)) = 16/5 > 3.
-
-Or 
 
 sgemm_8x8: 8\*K matrix multiples K\*8 matrix.  
 Computing / load ratio is: (2(4\*1 weight)\*8(1 in)) / (2(4\*1 in) + 2(4\*1 weight)) = 4 > 3
--->
